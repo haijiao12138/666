@@ -6,10 +6,13 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
+import redis.clients.jedis.Jedis;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author: haijiao12138
@@ -43,6 +46,9 @@ public class WebAspect {
      */
     @Around("pointCut()")
     public Object aroundAdvice(ProceedingJoinPoint proceedingJoinPoint) {
+
+        //Boolean aBoolean = stringRedisTemplate.opsForValue().setIfAbsent("111", "000", 3000, TimeUnit.SECONDS);
+
         System.out.println("----------- 环绕通知 -----------");
         Signature signature = proceedingJoinPoint.getSignature();
 
@@ -53,7 +59,8 @@ public class WebAspect {
         String s = stringRedisTemplate.opsForValue().get(key);
         if (s == null) {//如果在redis中没取到值 将方法的路径作为key  将切面运行结果作为value存入redis中 供下一次查询使用
             try {
-                Object proceed = proceedingJoinPoint.proceed();
+                Object proceed = proceedingJoinPoint.proceed();//之前的业务
+
                 stringRedisTemplate.opsForValue().set(key, String.valueOf(proceed));
                 return proceed;
             } catch (Throwable throwable) {

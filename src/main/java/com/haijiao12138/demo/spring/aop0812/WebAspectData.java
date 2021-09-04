@@ -19,6 +19,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author: 候苑博
@@ -33,6 +35,32 @@ public class WebAspectData {
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+    /**
+     * @author haijiao12138
+     * @Date 2021/8/01 17:29
+     * @Description:redis实现分布式锁
+     */
+    public String lock(){
+        String lock = "001";
+        String clientId = UUID.randomUUID().toString();
+        //加锁
+        Boolean result = stringRedisTemplate.
+                opsForValue().
+                setIfAbsent(lock, clientId, 100, TimeUnit.SECONDS);//根据业务设置过期时间100s
+        if (!result){
+            //如果没有set成功，代表获取锁失败 直接返回友好提示
+            return "请稍等！！！";
+        }
+        //中间执行业务代码
+        //释放锁
+        String s = stringRedisTemplate.opsForValue().get(lock);
+        if (s.equals(clientId)){
+            //通过当前的uuid的不同 判断是不是刚才那个线程用到了锁 如梭符合 就释放锁
+            stringRedisTemplate.delete(lock);//释放锁
+
+        }
+        return "业务代码情况";
+    }
 
     /**
      * 切入点
